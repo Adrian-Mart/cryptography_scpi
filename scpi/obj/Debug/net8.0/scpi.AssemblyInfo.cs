@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("scpi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e71ad0a8a0a845d175640c2e17a4a4fb5a6a4ea9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c6041b75b341754073490deaef117bf8bcfdfb22")]
 [assembly: System.Reflection.AssemblyProductAttribute("scpi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("scpi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

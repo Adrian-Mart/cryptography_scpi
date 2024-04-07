@@ -9,12 +9,12 @@ public class Session
     /// <summary>
     /// The public key used to encrypt the session.
     /// </summary>
-    public string? PublicKey { get; private set; }
+    public byte[]? PublicKey { get; private set; }
 
     /// <summary>
     /// The private key used to decrypt the session.
     /// </summary>
-    public string? PrivateKey { get; private set; }
+    public byte[]? PrivateKey { get; private set; }
 
     /// <summary>
     /// The password used to generate the keys.
