@@ -17,8 +17,9 @@ namespace scpi.Tests
 
             // Assert
             string plainText = "Hello, world!";
-            string cipherText = CipherAES(key, plainText);
-            string decipheredText = DecipherAES(key, cipherText);
+            var iv = GenerateSecureIV();
+            string cipherText = EncryptStringAes(plainText, key, iv);
+            string decipheredText = DecryptStringAes(cipherText, key, iv);
             if (decipheredText != plainText)
                 Assert.Fail("Deciphered text does not match the plain text.");
             else
@@ -41,42 +42,56 @@ namespace scpi.Tests
                 Assert.Pass();
         }
 
-        private string CipherAES(byte[] key, string plainText)
+        public static string EncryptStringAes(string plainText, byte[] Key, byte[] IV)
         {
-            // Encrypt the plain text using AES-256
-            using (var aes = Aes.Create())
+            using (Aes aesAlg = Aes.Create())
             {
-                aes.Key = key;
-                aes.GenerateIV();
+                aesAlg.Key = Key;
+                aesAlg.IV = IV;
 
-                using (var encryptor = aes.CreateEncryptor())
-                using (var ms = new MemoryStream())
-                using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msEncrypt = new MemoryStream())
                 {
-                    byte[] plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-                    cs.Write(plainBytes, 0, plainBytes.Length);
-                    cs.FlushFinalBlock();
-                    return Convert.ToBase64String(ms.ToArray());
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                        {
+                            swEncrypt.Write(plainText);
+                        }
+                        return Convert.ToBase64String(msEncrypt.ToArray());
+                    }
                 }
             }
         }
 
-        private string DecipherAES(byte[] key, string cipherText)
+        public static byte[] GenerateSecureIV()
         {
-            // Decrypt the cipher text using AES-256
-            using (var aes = Aes.Create())
+            using (Aes aes = Aes.Create())
             {
-                aes.Key = key;
                 aes.GenerateIV();
+                return aes.IV;
+            }
+        }
 
-                using (var decryptor = aes.CreateDecryptor())
-                using (var ms = new MemoryStream())
-                using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Write))
+        public static string DecryptStringAes(string cipherText, byte[] Key, byte[] IV)
+        {
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Key;
+                aesAlg.IV = IV;
+
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msDecrypt = new MemoryStream(Convert.FromBase64String(cipherText)))
                 {
-                    byte[] cipherBytes = Convert.FromBase64String(cipherText);
-                    cs.Write(cipherBytes, 0, cipherBytes.Length);
-                    cs.FlushFinalBlock();
-                    return System.Text.Encoding.UTF8.GetString(ms.ToArray());
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                        {
+                            return srDecrypt.ReadToEnd();
+                        }
+                    }
                 }
             }
         }
