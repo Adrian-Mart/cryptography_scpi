@@ -1,0 +1,16 @@
+@page
+@model LoadKeysModel
+@{
+    ViewData["Title"] = "Cargar llaves";
+}
+
+<form method="post">
+    <div class="text-center">
+        <h1 class="display-4">Cargar llaves</h1>
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('PublicKey').click()">Llave privada</button>
+        <input type="file" id="PublicKey" style="display: none;" onchange="checkFiles()" />
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('PrivateKey').click()">Llave pública</button>
+        <input type="file" id="PrivateKey" style="display: none;" onchange="checkFiles()" /></p>
+        <button type="submit" class="btn btn-success" id="loadKeysButton" disabled>Continuar</button>
+    </div>
+</form>
