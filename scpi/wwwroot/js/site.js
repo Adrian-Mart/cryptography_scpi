@@ -3,11 +3,11 @@
 
 // Write your JavaScript code.
 function checkFiles() {
-    var privateKeyInput = document.getElementById('privateKeyInput');
-    var PrivateKey = document.getElementById('PrivateKey');
+    var privateKey = document.getElementById('PublicKey'); // Cambiado a 'PublicKey'
+    var publicKey = document.getElementById('PrivateKey'); // Cambiado a 'PrivateKey'
     var loadKeysButton = document.getElementById('loadKeysButton');
 
-    if (privateKeyInput.files.length > 0 && PrivateKey.files.length > 0) {
+    if (privateKey.files.length > 0 && publicKey.files.length > 0) {
         loadKeysButton.disabled = false;
     } else {
         loadKeysButton.disabled = true;
