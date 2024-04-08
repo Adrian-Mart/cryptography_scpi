@@ -4,7 +4,7 @@ namespace scpi;
 
 public static class DigitalSignature
 {
-    public static string Sign(string message, byte[] privateKey, byte[] publicKey)
+    public static string Sign(string message, byte[] privateKey)
     {
         // use RSA.Create() to create an instance of the RSA algorithm
         using (var rsa = RSA.Create())

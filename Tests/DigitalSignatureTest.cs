@@ -8,7 +8,7 @@ namespace scpi.Tests
             // Arrange
             string message = "Hello, world!";
             (byte[] publicKey, byte[] privateKey) = KeyGenerator.GenerateAsymmetricKeys();
-            string signature = DigitalSignature.Sign(message, privateKey, publicKey);
+            string signature = DigitalSignature.Sign(message, privateKey);
 
             // Act
             bool result = DigitalSignature.Verify(message, signature, publicKey);
@@ -26,7 +26,7 @@ namespace scpi.Tests
             // Arrange
             string message = "Hello, world!";
             (byte[] publicKey, byte[] privateKey) = KeyGenerator.GenerateAsymmetricKeys();
-            string signature = DigitalSignature.Sign(message, privateKey, publicKey);
+            string signature = DigitalSignature.Sign(message, privateKey);
 
             // Act
             string message2 = "Hello, world?";

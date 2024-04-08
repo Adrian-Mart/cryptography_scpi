@@ -111,7 +111,7 @@ public class Session
         (PublicKey, PrivateKey) = KeyProtocol.KeysFromString(pub, priv, Password);
     }
 
-    public byte[] LoadUserPublicKey(string user, string path)
+    public static byte[] LoadUserPublicKey(string user, string path)
     {
         string fileName = $"{user}_pub_key.xml";
         var fullPath = Path.Combine(path, fileName);
@@ -120,7 +120,7 @@ public class Session
         return ReadSessionKey(fullPath).GetPublicKey();
     }
 
-    private SessionKey ReadSessionKey(string path)
+    private static SessionKey ReadSessionKey(string path)
     {
         // Read the SessionKey from the xml file
         XmlSerializer serializer = new XmlSerializer(typeof(SessionKey));
@@ -136,6 +136,22 @@ public class Session
         
         using var writer = new StreamWriter(path);
         serializer.Serialize(writer, sessionKey);
+    }
+
+    public byte[] GetPublicKey()
+    {
+        if(PublicKey == null)
+            throw new InvalidOperationException("Public key not loaded");
+
+        return PublicKey;
+    }
+
+    public byte[] GetPrivateKey()
+    {
+        if(PrivateKey == null)
+            throw new InvalidOperationException("Private key not loaded");
+
+        return PrivateKey;
     }
 }
 
