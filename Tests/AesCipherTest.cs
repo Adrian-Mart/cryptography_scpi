@@ -8,13 +8,14 @@ namespace scpi.Tests
             // Arrange
             string plainText = "Hello, world!";
             string password = "myPassword";
-            byte[] key = KeyGenerator.GenerateSymmetricKey(password);
+            byte[] key = KeyGenerator.GenerateSymmetricKey(password, out byte[] salt);
 
             // Act
             string cipherText = AesCipher.Encrypt(plainText, key, out byte[] iv);
-            string ComposeMessage = AesCipher.ComposeMessage(cipherText, iv);
-            (string cipherText2, byte[] iv2) = AesCipher.DecomposeMessage(ComposeMessage);
-            string decipheredText = AesCipher.Decrypt(cipherText2, key, iv2);
+            string ComposeMessage = AesCipher.ComposeMessage(cipherText, iv, salt);
+            (string cipherText2, byte[] iv2, byte[] salt2) = AesCipher.DecomposeMessage(ComposeMessage);
+            byte[] key2 = KeyGenerator.GenerateSymmetricKey(password, salt2);
+            string decipheredText = AesCipher.Decrypt(cipherText2, key2, iv2);
 
             // Assert
             if (decipheredText != plainText)

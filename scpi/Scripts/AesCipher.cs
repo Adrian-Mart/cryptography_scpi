@@ -28,28 +28,28 @@ public static class AesCipher
         }
     }
 
-    public static string ComposeMessage(string cipher_text, byte[] IV)
+    public static string ComposeMessage(string cipher_text, byte[] IV, byte[] salt)
     {
-        // Get the length of the IV
-        var iv_length = IV.Length;
         // Get the iv as a string
         var iv_string = Convert.ToBase64String(IV);
+        // Get the salt as a string
+        var salt_string = Convert.ToBase64String(salt);
         // Join the text, iv length, and iv
-        return $"{iv_length}:{iv_string}:{cipher_text}";
+        return $"{iv_string}:{salt_string}:{cipher_text}";
     }
 
-    public static (string, byte[]) DecomposeMessage(string message)
+    public static (string, byte[], byte[]) DecomposeMessage(string message)
     {
         // Split the message into its parts
         var parts = message.Split(':');
-        // Get the iv length
-        var iv_length = int.Parse(parts[0]);
         // Get the iv
-        var iv = Convert.FromBase64String(parts[1]);
+        var iv = Convert.FromBase64String(parts[0]);
+        // Get the salt
+        var salt = Convert.FromBase64String(parts[1]);
         // Get the cipher text
         var cipher_text = parts[2];
         // Return the parts
-        return (cipher_text, iv);
+        return (cipher_text, iv, salt);
     }
 
     private static byte[] GenerateSecureIV()
