@@ -6,8 +6,8 @@ public static class DigitalSignature
 {
     public static string Sign(string message, byte[] privateKey, byte[] publicKey)
     {
-        // use OpenSSL to sign the message
-        using (var rsa = new RSAOpenSsl())
+        // use RSA.Create() to create an instance of the RSA algorithm
+        using (var rsa = RSA.Create())
         {
             rsa.ImportRSAPrivateKey(privateKey, out _);
 
@@ -20,7 +20,7 @@ public static class DigitalSignature
     public static bool Verify(string message, string signature, byte[] publicKey)
     {
         // use OpenSSL to verify the signature
-        using (var rsa = new RSAOpenSsl())
+        using (var rsa = RSA.Create())
         {
             rsa.ImportSubjectPublicKeyInfo(publicKey, out _);
 

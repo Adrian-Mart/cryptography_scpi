@@ -7,7 +7,7 @@ public static class RsaCipher
     public static string Cipher(byte[] publicKey, string plainText)
     {
         // Encrypt the plain text using RSA
-        using (var rsa = new RSAOpenSsl())
+        using (var rsa = RSA.Create())
         {
             rsa.ImportSubjectPublicKeyInfo(publicKey, out _);
 
@@ -20,7 +20,7 @@ public static class RsaCipher
     public static string Decipher(byte[] privateKey, string cipherText)
     {
         // Decrypt the cipher text using RSA
-        using (var rsa = new RSAOpenSsl())
+        using (var rsa = RSA.Create())
         {
             rsa.ImportRSAPrivateKey(privateKey, out _);
 
