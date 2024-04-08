@@ -153,6 +153,36 @@ public class Session
 
         return PrivateKey;
     }
+
+    public string? GetOtherUser(string path)
+    {
+        // Get all the files in the directory that end with "_pub_key.xml"
+        string[] files = Directory.GetFiles(path, "*_pub_key.xml");
+        // Get a list of all file names without the extension
+        var users = files.Select(f => Path.GetFileNameWithoutExtension(f)).ToList();
+        // Remove the current user from the list
+        users.Remove(User);
+        // Return the first user in the list or null if the list is empty
+        return users.Count != 0? users.First(): null;
+    }
+
+    public void Close(string path)
+    {
+        string[] files = new string[]
+        {
+            $"{User}_pub_key.xml",
+            $"{User}_priv_key.xml",
+            $"{User}_{GetOtherUser(path)}_key.xml",
+            $"{User}_message.xml"
+        };
+
+        foreach (var file in files)
+        {
+            var fullPath = Path.Combine(path, file);
+            if (File.Exists(fullPath))
+                File.Delete(fullPath);
+        }
+    }
 }
 
 public class SessionKey
