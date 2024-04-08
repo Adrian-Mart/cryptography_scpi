@@ -4,6 +4,33 @@ namespace scpi;
 
 public class KeyGenerator
 {
+    public static byte[] GenerateSymmetricKey(string password, out byte[] salt)
+    {
+        salt = new byte[9];
+        RandomNumberGenerator.Fill(salt);
+
+        using (var deriveBytes = new Rfc2898DeriveBytes(
+            password,
+            salt,
+            10000,
+            HashAlgorithmName.SHA3_256))
+        {
+            return deriveBytes.GetBytes(32);
+        }
+    }
+
+    public static byte[] GenerateSymmetricKey(string password, byte[] salt)
+    {
+        using (var deriveBytes = new Rfc2898DeriveBytes(
+            password,
+            salt,
+            10000,
+            HashAlgorithmName.SHA3_256))
+        {
+            return deriveBytes.GetBytes(32);
+        }
+    }
+
     /// <summary>
     /// Generates a symmetric key from a password.
     /// </summary>
