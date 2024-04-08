@@ -12,7 +12,7 @@ public static class RsaCipher
             rsa.ImportSubjectPublicKeyInfo(publicKey, out _);
 
             byte[] plainBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            byte[] cipherBytes = rsa.Encrypt(plainBytes, RSAEncryptionPadding.OaepSHA256);
+            byte[] cipherBytes = rsa.Encrypt(plainBytes, RSAEncryptionPadding.OaepSHA3_256);
             return Convert.ToBase64String(cipherBytes);
         }
     }
@@ -25,7 +25,7 @@ public static class RsaCipher
             rsa.ImportRSAPrivateKey(privateKey, out _);
 
             byte[] cipherBytes = Convert.FromBase64String(cipherText);
-            byte[] plainBytes = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA256);
+            byte[] plainBytes = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA3_256);
             return System.Text.Encoding.UTF8.GetString(plainBytes);
         }
     }
