@@ -63,7 +63,7 @@ public class KeyGenerator
     /// <returns>The generated keys.</returns>
     public static (byte[], byte[]) GenerateAsymmetricKeys()
     {
-        using (var rsa = RSA.Create())
+        using (var rsa = new RSACryptoServiceProvider())
         {
             // Export the public key
             var publicKey = rsa.ExportSubjectPublicKeyInfo();
