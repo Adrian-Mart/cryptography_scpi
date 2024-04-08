@@ -14,6 +14,20 @@ public class MessageManager
         BasePath = path;
     }
 
+    public bool TryReadMessage(Session session, string user, out string message)
+    {
+        try
+        {
+            message = ReadMessage(session, user);
+            return true;
+        }
+        catch (Exception)
+        {
+            message = string.Empty;
+            return false;
+        }
+    }
+
     public string ReadMessage(Session session, string user)
     {
         var fullPath = Path.Combine(BasePath, $"{user}_message.xml");
