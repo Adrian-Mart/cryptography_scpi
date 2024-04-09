@@ -8,6 +8,13 @@ namespace scpi.Pages;
 /// </summary>
 public class IndexModel : PageModel
 {
+    private readonly ApplicationDbContext _context;
+
+    public IndexModel(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
     /// <summary>
     /// Creates a property of type string called username and initializes it with an empty string
     /// </summary>
@@ -36,6 +43,9 @@ public class IndexModel : PageModel
         ///</summary>
         if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
         {
+            var controller = new DatabaseController(_context);
+            controller.AddUser("username", "password", "publicKey");
+
             ///<summary>
             ///Checks if the generatekeys is on or off, if it is on it redirects to the saveKeys page, if it is off it redirects to the loadKeys page
             ///</summary>
