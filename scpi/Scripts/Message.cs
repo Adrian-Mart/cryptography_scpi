@@ -28,32 +28,28 @@ public class MessageManager
         }
     }
 
-    public string ReadMessage(Session session, string user)
+    public string ReadMessage(Session session, string senderUsername)
     {
-        var fullPath = Path.Combine(BasePath, $"{user}_message.xml");
-
         // Read the message object from the xml file
-        Message message = Read(fullPath);
+        Message message = Read(senderUsername, session.User);
 
         // Get public key of the user
-        var publicKey = Session.LoadUserPublicKey(user, BasePath);
+        var publicKey = Session.LoadUserPublicKey(senderUsername, BasePath);
 
         // Validate the message
         if (!Validate(message, publicKey))
             throw new InvalidOperationException("Invalid message: signature does not match");
 
         // Get the symmetric key
-        var key = session.ReceiveSymmetricKey(BasePath, user);
+        var key = session.ReceiveSymmetricKey(BasePath, senderUsername);
 
         // Decrypt the message
         (string text, byte[] iv, _) = AesCipher.DecomposeMessage(message.Text);
         return AesCipher.Decrypt(text, key, iv);
     }
 
-    public void WriteMessage(string text, Session session)
+    public void WriteMessage(string text, Session session, string receiver)
     {
-        var fullPath = Path.Combine(BasePath, $"{session.User}_message.xml");
-
         // Encrypt the message
         string cipherText = AesCipher.Encrypt(text, session.SymmetricKey, out byte[] iv);
         string composedMessage = AesCipher.ComposeMessage(cipherText, iv, new byte[8]);
@@ -62,24 +58,35 @@ public class MessageManager
         string signature = DigitalSignature.Sign(cipherText, session.GetPrivateKey());
 
         // Save the message object to an xml file
-        Write(new Message { Text = composedMessage, Signature = signature }, fullPath);
+        Write(new Message { Text = composedMessage, Signature = signature },
+            session.User, receiver);
     }
 
-    private Message Read(string path)
+    private Message Read(string senderUsername, string receiverUsername)
     {
-        // Read the message object from the xml file
-        XmlSerializer serializer = new XmlSerializer(typeof(Message));
-        using var reader = new StreamReader(path);
-        return serializer.Deserialize(reader) as Message ??
-            throw new InvalidOperationException("Invalid message");
+        UserDB receiver = DatabaseController.GetUser(receiverUsername) ??
+            throw new InvalidOperationException("Receiver not found");
+        UserDB sender = DatabaseController.GetUser(senderUsername) ??
+            throw new InvalidOperationException("Sender not found");
+
+        var message = DatabaseController.GetMessage(sender, receiver);
+
+        if (message is null)
+            throw new InvalidOperationException("Message not found");
+
+        Message m = new Message { Text = message.Text, Signature = message.Signature };
+
+        return m;
     }
 
-    private void Write(Message message, string path)
+    private void Write(Message message, string senderUsername, string receiverUsername)
     {
-        XmlSerializer serializer = new XmlSerializer(typeof(Message));
+        UserDB receiver = DatabaseController.GetUser(receiverUsername) ??
+            throw new InvalidOperationException("Receiver not found");
+        UserDB sender = DatabaseController.GetUser(senderUsername) ??
+            throw new InvalidOperationException("Sender not found");
 
-        using var writer = new StreamWriter(path);
-        serializer.Serialize(writer, message);
+        DatabaseController.AddMessage(sender, receiver, message.Text, message.Signature);
     }
 
     private bool Validate(Message message, byte[] publicKey)
