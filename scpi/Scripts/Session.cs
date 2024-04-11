@@ -199,6 +199,30 @@ public class Session
         }
     }
 
+    public string ReadCipher()
+    {
+        try
+        {
+            return MessageManager.ReadCipher(this);
+        }
+        catch (Exception)
+        {
+            return "[Sin mensajes]";
+        }
+    }
+
+    public string Decipher(string cipher)
+    {
+        try
+        {
+            return MessageManager.Decipher(cipher, this);
+        }
+        catch (Exception)
+        {
+            return "[Sin mensajes]";
+        }
+    }
+
     public void SendMessage(string message)
     {
         MessageManager.WriteMessage(message, this);

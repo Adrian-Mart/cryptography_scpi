@@ -38,20 +38,44 @@ public class ComunicationModel : PageModel
 
         otherAvailable = Sessions.SessionsList[sessionId].SetOtherUser();
         user = Sessions.SessionsList[sessionId].CurrentSession!.Other?.user ?? "[Sin usuario]";
-        Sessions.SessionsList[sessionId].ShareSymmetricKey();
 
-
-    }
-
-    public void OnPostSend()
-    {
-        if (otherAvailable)
+        if (user == "[Sin usuario]")
         {
-            Sessions.SessionsList[sessionId].WriteMessage(mensaje);
+            // Redirect to the index page
+            RedirectToPage("Index");
         }
-    }
+        else Sessions.SessionsList[sessionId].ShareSymmetricKey();
 
-    
+        try
+        {
+            var m = httpContextAccessor.HttpContext?.Request.Query["m"].First() ?? "";
+            if (!string.IsNullOrEmpty(m))
+            {
+                message = MessageManager.Decipher(m, Sessions.SessionsList[sessionId].CurrentSession!);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+        try
+        {
+            var t = httpContextAccessor.HttpContext?.Request.Query["t"].First() ?? "";
+            var s = httpContextAccessor.HttpContext?.Request.Query["s"].First() ?? "";
+
+            if (!string.IsNullOrEmpty(t) && !string.IsNullOrEmpty(s))
+            {
+                DatabaseController.AddMessage(Sessions.SessionsList[sessionId].CurrentSession!.User,
+                    Sessions.SessionsList[sessionId].CurrentSession!.Other!, t, s);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+    }
 
     public IActionResult OnPost()
     {
@@ -60,19 +84,14 @@ public class ComunicationModel : PageModel
             case "Actualizar":
                 if (otherAvailable)
                 {
-                    message = Sessions.SessionsList[sessionId].CurrentSession?.ReadMessage() ?? "[Sin mensajes]";
+                    message = Sessions.SessionsList[sessionId].CurrentSession?.ReadCipher() ?? "[Sin mensajes]";
                 }
-                else
-                {
-                    otherAvailable = Sessions.SessionsList[sessionId].SetOtherUser();
-                    user = Sessions.SessionsList[sessionId].CurrentSession!.Other?.user ?? "[Sin usuario]";
-                    Sessions.SessionsList[sessionId].ShareSymmetricKey();
-                }
-                return Redirect($"/cominicacion?sessionId={sessionId}");
+                return Redirect($"/cominicacion?sessionId={sessionId}&m={message}");
             case "Salir":
                 return Redirect($"/Index?sessionId={sessionId}");
             default:
-                return Redirect($"/cominicacion?sessionId={sessionId}");
+                var m = Sessions.SessionsList[sessionId].GetCipher(mensaje);
+                return Redirect($"/cominicacion?sessionId={sessionId}&t={m.Text}&s={m.Signature}");
         }
     }
 }

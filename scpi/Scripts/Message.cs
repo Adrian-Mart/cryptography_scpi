@@ -41,6 +41,31 @@ public static class MessageManager
         return AesCipher.Decrypt(text, key, iv);
     }
 
+    public static string ReadCipher(Session session)
+    {
+        // Read the message object from the xml file
+        Message message = Read(session.Other!, session.User);
+
+        // Get public key of the user
+        var publicKey = Session.LoadUserPublicKey(session.Other!);
+
+        // Validate the message
+        if (!Validate(message, publicKey))
+            throw new InvalidOperationException("Invalid message: signature does not match");
+
+        return message.Text;
+    }
+
+    public static string Decipher(string cipher, Session session)
+    {
+        // Get the symmetric key
+        var key = session.ReceiveSymmetricKey();
+
+        // Decrypt the message
+        (string text, byte[] iv, _) = AesCipher.DecomposeMessage(cipher);
+        return AesCipher.Decrypt(text, key, iv);
+    }
+
     public static void WriteMessage(string text, Session session)
     {
         // Encrypt the message
@@ -53,6 +78,19 @@ public static class MessageManager
         // Save the message object to an xml file
         Write(new Message { Text = composedMessage, Signature = signature },
             session.User, session.Other!);
+    }
+
+    public static Message GetCipher(string text, Session session)
+    {
+        // Encrypt the message
+        string cipherText = AesCipher.Encrypt(text, session.SymmetricKey, out byte[] iv);
+        string composedMessage = AesCipher.ComposeMessage(cipherText, iv, new byte[8]);
+
+        // Sign the message
+        string signature = DigitalSignature.Sign(cipherText, session.GetPrivateKey());
+
+        // Save the message object to an xml file
+        return new Message { Text = composedMessage, Signature = signature };
     }
 
     private static Message Read(UserDB sender, UserDB receiver)

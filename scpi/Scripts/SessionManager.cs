@@ -65,6 +65,11 @@ public class SessionManager
     {
         MessageManager.WriteMessage(text, CurrentSession!);
     }
+
+    public Message GetCipher(string text)
+    {
+        return MessageManager.GetCipher(text, CurrentSession!);
+    }
 }
 
 public static class Sessions
