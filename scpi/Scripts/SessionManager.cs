@@ -9,7 +9,10 @@ public class SessionManager
         manager = new SessionManager();
         try
         {
-            manager.CurrentSession = new Session(user, password);
+            manager.CurrentSession = new Session(user, password)
+            {
+                Generated = false
+            };
             return true;
         }
         catch (Exception e)
@@ -23,6 +26,7 @@ public class SessionManager
     public void GenerateKeys()
     {
         CurrentSession?.GenerateKeys();
+        CurrentSession!.Generated = true;
     }
 
     public void ShareSymmetricKey()

@@ -24,6 +24,7 @@ public class ComunicationModel : PageModel
 
     public ComunicationModel(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
     {
+        
         DatabaseController.Initialize(context);
 
         var id = httpContextAccessor.HttpContext?.Request.Query["sessionId"];

@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -9,32 +10,30 @@ public class SaveKeysModel : PageModel
     public IFormFile PublicKeyFile { get; set; } = null!;
     public IFormFile PrivateKeyFile { get; set; } = null!;
     private readonly ApplicationDbContext _context;
-    private string privateKey, publicKey;
-    private int sessionId = 0;
+    [BindProperty]
+    public int sessionId { get; private set; } = 0;
+    private IHttpContextAccessor _httpContextAccessor;
 
     public SaveKeysModel(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
-
-        var id = httpContextAccessor.HttpContext?.Request.Query["sessionId"];
+        _httpContextAccessor = httpContextAccessor;
+        var id = _httpContextAccessor.HttpContext?.Request.Query["sessionId"];
+        // Print the current url
+        Console.WriteLine(_httpContextAccessor.HttpContext?.Request.GetDisplayUrl());
         sessionId = int.Parse(id?.First() ?? throw new InvalidOperationException("No session found"));
-
         DatabaseController.Initialize(_context);
-        // Check if the session is null
-        if (Sessions.SessionsList[sessionId].CurrentSession == null)
-        {
-            // Redirect to the index page
-            RedirectToPage("Index");
-        }
 
         // Generate the keys
-        Sessions.SessionsList[sessionId].GenerateKeys();
-        (publicKey, privateKey) = Sessions.SessionsList[sessionId].SaveKeys();
+        if (!Sessions.SessionsList[sessionId].CurrentSession!.Generated)
+            Sessions.SessionsList[sessionId].GenerateKeys();
     }
 
     public FileResult OnGetDownloadFile(string fileName, bool privateKey)
     {
-        string content = privateKey ? this.privateKey : publicKey;
+        (string pub, string priv) = Sessions.SessionsList[sessionId].SaveKeys();
+
+        string content = privateKey ? priv : pub;
         var byteArray = Encoding.UTF8.GetBytes(content);
         return File(byteArray, "application/octet-stream", fileName);
     }

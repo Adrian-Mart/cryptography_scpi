@@ -12,8 +12,8 @@
                     <h1 class="display-4">Guardar llaves</h1>
                     <p class="lead">Por favor, guarde las llaves generadas en un lugar seguro. No podrá recuperarlas si las pierde.</p>
                     <div class="mt-4">
-                        <a download href="@Url.Page("SaveKeys", "DownloadFile", new { fileName = "PrivateKey.xml", privateKey = true })" class="btn btn-primary mr-2">Llave privada</a>
-                        <a download href="@Url.Page("SaveKeys", "DownloadFile", new { fileName = "PublicKey.xml", privateKey = false })" class="btn btn-primary">Llave pública</a>
+                        <a download href="@Url.Page("SaveKeys", "DownloadFile", new { sessionId = Model.sessionId, fileName = "PrivateKey.xml", privateKey = true })" class="btn btn-primary mr-2">Llave privada</a>
+                        <a download href="@Url.Page("SaveKeys", "DownloadFile", new { sessionId = Model.sessionId, fileName = "PublicKey.xml", privateKey = false })" class="btn btn-primary">Llave pública</a>
                     </div>
                     <div class="mt-4">
                         <button type="submit" class="btn btn-success" id="continueButton">Continuar</button>

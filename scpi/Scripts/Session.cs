@@ -31,6 +31,8 @@ public class Session
 
     public UserDB? Other { get; private set; }
 
+    public bool Generated { get; set; }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Session"/> class.
     /// </summary>
