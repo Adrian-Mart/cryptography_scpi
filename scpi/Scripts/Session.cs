@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Xml.Serialization;
 
 namespace scpi;
@@ -26,121 +27,151 @@ public class Session
     /// <summary>
     /// The user associated with the session.
     /// </summary>
-    public string User { get; private set; }
+    public UserDB User { get; private set; }
 
-    private byte[] salt;
+    public UserDB? Other { get; private set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Session"/> class.
     /// </summary>
     public Session(string user, string password)
     {
-        User = user;
+        
+        var nullableUser = DatabaseController.GetUser(user);
+
+        if(nullableUser == null)
+        {
+            DatabaseController.AddUser(user, password, "");
+            User = DatabaseController.GetUser(user) ??
+                throw new InvalidOperationException("User not found");
+        }
+        else User = nullableUser;
+
+        // Get SHA-3 hash of the password
+        var hash = SHA3_256.HashData(System.Text.Encoding.UTF8.GetBytes(password));
+        if (User.password != Convert.ToBase64String(hash))
+            throw new InvalidOperationException("Invalid password");
+
         Password = password;
-        SymmetricKey = KeyGenerator.GenerateSymmetricKey(password, out salt);
+        SymmetricKey = KeyGenerator.GenerateSymmetricKey(password);
     }
 
-    
+    public void SetOtherUser(UserDB otherUser)
+    {
+        Other = otherUser;
+    }
+
     public void GenerateKeys()
     {
         (PublicKey, PrivateKey) = KeyGenerator.GenerateAsymmetricKeys();
     }
 
-    public void ShareSymmetricKey(string path, string user)
+    public void ShareSymmetricKey()
     {
-        string fileName = $"{User}_{user}_key.xml";
-        var fullPath = Path.Combine(path, fileName);
+        if (Other == null)
+            return;
 
         // Get the public key of the user
-        byte[] publicKey = LoadUserPublicKey(user, path);
+        byte[] publicKey = LoadUserPublicKey(Other);
 
         // Cipher the symmetric key with the user's public key
         string key = Convert.ToBase64String(SymmetricKey);
         string cipheredKey = RsaCipher.Cipher(publicKey, key);
 
-        // Write the symmetric key to the xml file
-        WriteSessionKey(cipheredKey, fullPath);
+        var register = DatabaseController.GetSharedKey(User, Other);
+        if (register == null)
+            DatabaseController.AddSharedKey(User, Other, cipheredKey);
+        else
+        {
+            register.key = cipheredKey;
+            DatabaseController.UpdateSharedKey(register);
+        }
     }
 
-    public byte[] ReceiveSymmetricKey(string path, string user)
+    public byte[] ReceiveSymmetricKey()
     {
-        string fileName = $"{user}_{User}_key.xml";
-        var fullPath = Path.Combine(path, fileName);
+        if (Other == null)
+            throw new InvalidOperationException("Other user not set");
 
-        // Load the ciphered symmetric key from the xml file
-        string cipheredKey = ReadSessionKey(fullPath).Value;
+        var register = DatabaseController.GetSharedKey(Other, User) ??
+            throw new InvalidOperationException("Shared key not found");
 
-        if(PrivateKey == null)
+        if (PrivateKey == null)
             throw new InvalidOperationException("Private key not loaded");
 
         // Decipher the symmetric key with the user's private key
-        string key = RsaCipher.Decipher(PrivateKey, cipheredKey);
+        string key = RsaCipher.Decipher(PrivateKey, register.key);
         return Convert.FromBase64String(key);
     }
 
     /// <summary>
     /// Saves the session keys in a secure manner.
     /// </summary>
-    public void SaveKeys(string path)
+    public (string, string) SaveKeys()
     {
-        if(PrivateKey == null || PublicKey == null)
+        if (PrivateKey == null || PublicKey == null)
             throw new InvalidOperationException("Asymmetric keys are null");
 
-        (string publicKey, string privateKey) = KeyProtocol.KeysToString(PublicKey, PrivateKey, Password);
+        (string publicKey, string privateKey) =
+            KeyProtocol.KeysToString(PublicKey, PrivateKey, Password);
 
-        string publicPath = Path.Combine(path, $"{User}_pub_key.xml");
-        string privatePath = Path.Combine(path, $"{User}_priv_key.xml");
+        User.public_key = publicKey;
 
-        // Save the public key
-        WriteSessionKey(publicKey, publicPath);
-        // Save the private key
-        WriteSessionKey(privateKey, privatePath);
+        if (DatabaseController.GetUser(User.user) == null)
+            throw new InvalidOperationException("User not found");
+        else
+            DatabaseController.UpdateUser(User);
+
+        return (KeyToXML(publicKey), KeyToXML(privateKey));
     }
 
-    public void LoadKeys(string path)
+    public void LoadKeys(string privkey)
     {
-        string publicPath = Path.Combine(path, $"{User}_pub_key.xml");
-        string privatePath = Path.Combine(path, $"{User}_priv_key.xml");
-
         // Load the public key
-        string pub = ReadSessionKey(publicPath).Value;
+        string pub = User.public_key ??
+            throw new InvalidOperationException("Public key not found");
         // Load the private key
-        string priv = ReadSessionKey(privatePath).Value;
+        string priv = KeyFromXML(privkey);
 
         // Convert the keys from strings to byte arrays
         (PublicKey, PrivateKey) = KeyProtocol.KeysFromString(pub, priv, Password);
     }
 
-    public static byte[] LoadUserPublicKey(string user, string path)
+    private string KeyFromXML(string content)
     {
-        string fileName = $"{user}_pub_key.xml";
-        var fullPath = Path.Combine(path, fileName);
+        // Read a SessionKey object from the xml file content
+        var serializer = new XmlSerializer(typeof(SessionKey));
+        using (var reader = new StringReader(content))
+        {
+            var key = serializer.Deserialize(reader) as SessionKey ??
+                throw new InvalidOperationException("Invalid session key");
 
-        // Read the SessionKey from the xml file
-        return ReadSessionKey(fullPath).GetPublicKey();
+            return key.Value;
+        }
     }
 
-    private static SessionKey ReadSessionKey(string path)
+    private string KeyToXML(string key)
     {
-        // Read the SessionKey from the xml file
-        XmlSerializer serializer = new XmlSerializer(typeof(SessionKey));
-        using var reader = new StreamReader(path);
-        return serializer.Deserialize(reader) as SessionKey??
-            throw new InvalidOperationException("Invalid session key");
+        // Write a SessionKey object to the xml file content
+        var serializer = new XmlSerializer(typeof(SessionKey));
+        using (var writer = new StringWriter())
+        {
+            serializer.Serialize(writer, new SessionKey { Value = key });
+            return writer.ToString();
+        }
     }
 
-    private void WriteSessionKey(string key, string path)
-    {   
-        SessionKey sessionKey = new SessionKey { Value = key };
-        XmlSerializer serializer = new XmlSerializer(typeof(SessionKey));
-        
-        using var writer = new StreamWriter(path);
-        serializer.Serialize(writer, sessionKey);
+    public static byte[] LoadUserPublicKey(UserDB user)
+    {
+        var register = DatabaseController.GetUser(user.user) ??
+            throw new InvalidOperationException("User not found");
+
+        return Convert.FromBase64String(register.public_key!);
     }
 
     public byte[] GetPublicKey()
     {
-        if(PublicKey == null)
+        if (PublicKey == null)
             throw new InvalidOperationException("Public key not loaded");
 
         return PublicKey;
@@ -148,40 +179,29 @@ public class Session
 
     public byte[] GetPrivateKey()
     {
-        if(PrivateKey == null)
+        if (PrivateKey == null)
             throw new InvalidOperationException("Private key not loaded");
 
         return PrivateKey;
     }
 
-    public string? GetOtherUser(string path)
+    public string GetOtherUser() => Other!.user;
+
+    public string ReadMessage()
     {
-        // Get all the files in the directory that end with "_pub_key.xml"
-        string[] files = Directory.GetFiles(path, "*_pub_key.xml");
-        // Get a list of all file names without the extension
-        var users = files.Select(f => Path.GetFileNameWithoutExtension(f)).ToList();
-        // Remove the current user from the list
-        users.Remove(User);
-        // Return the first user in the list or null if the list is empty
-        return users.Count != 0? users.First(): null;
+        try
+        {
+            return MessageManager.ReadMessage(this);
+        }
+        catch (Exception)
+        {
+            return "[Sin mensajes]";
+        }
     }
 
-    public void Close(string path)
+    public void SendMessage(string message)
     {
-        string[] files = new string[]
-        {
-            $"{User}_pub_key.xml",
-            $"{User}_priv_key.xml",
-            $"{User}_{GetOtherUser(path)}_key.xml",
-            $"{User}_message.xml"
-        };
-
-        foreach (var file in files)
-        {
-            var fullPath = Path.Combine(path, file);
-            if (File.Exists(fullPath))
-                File.Delete(fullPath);
-        }
+        MessageManager.WriteMessage(message, this);
     }
 }
 
