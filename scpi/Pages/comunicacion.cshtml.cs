@@ -48,10 +48,11 @@ public class ComunicationModel : PageModel
 
         try
         {
-            var m = httpContextAccessor.HttpContext?.Request.Query["m"].First() ?? "";
-            if (!string.IsNullOrEmpty(m))
+            var u = httpContextAccessor.HttpContext?.Request.Query["u"].First() ?? "";
+            if (!string.IsNullOrEmpty(u) && u == "True")
             {
-                message = MessageManager.Decipher(m, Sessions.SessionsList[sessionId].CurrentSession!);
+                Sessions.SessionsList[sessionId].ShareSymmetricKey();
+                message = Sessions.SessionsList[sessionId].ReadMessage();
             }
         }
         catch (Exception e)
@@ -66,8 +67,9 @@ public class ComunicationModel : PageModel
 
             if (!string.IsNullOrEmpty(t) && !string.IsNullOrEmpty(s))
             {
-                DatabaseController.AddMessage(Sessions.SessionsList[sessionId].CurrentSession!.User,
-                    Sessions.SessionsList[sessionId].CurrentSession!.Other!, t, s);
+                t = t.Replace(")", "+").Replace("(", "/").Replace("-", "=");
+                s = s.Replace(")", "+").Replace("(", "/").Replace("-", "=");
+                MessageManager.WriteMessage(t, s, Sessions.SessionsList[sessionId].CurrentSession!);
             }
         }
         catch (Exception e)
@@ -82,16 +84,14 @@ public class ComunicationModel : PageModel
         switch (action)
         {
             case "Actualizar":
-                if (otherAvailable)
-                {
-                    message = Sessions.SessionsList[sessionId].CurrentSession?.ReadCipher() ?? "[Sin mensajes]";
-                }
-                return Redirect($"/cominicacion?sessionId={sessionId}&m={message}");
+                return Redirect($"/comunicacion?sessionId={sessionId}&u={otherAvailable}");
             case "Salir":
                 return Redirect($"/Index?sessionId={sessionId}");
             default:
                 var m = Sessions.SessionsList[sessionId].GetCipher(mensaje);
-                return Redirect($"/cominicacion?sessionId={sessionId}&t={m.Text}&s={m.Signature}");
+                m.Text = m.Text.Replace("+", ")").Replace("/", "(").Replace("=", "-");
+                m.Signature = m.Signature.Replace("+", ")").Replace("/", "(").Replace("=", "-");
+                return Redirect($"/comunicacion?sessionId={sessionId}&t={m.Text}&s={m.Signature}");
         }
     }
 }

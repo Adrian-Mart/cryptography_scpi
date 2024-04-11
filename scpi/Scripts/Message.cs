@@ -80,6 +80,12 @@ public static class MessageManager
             session.User, session.Other!);
     }
 
+    public static void WriteMessage(string t, string s, Session session)
+    {
+        Write(new Message { Text = t, Signature = s },
+            session.User, session.Other!);
+    }
+
     public static Message GetCipher(string text, Session session)
     {
         // Encrypt the message
