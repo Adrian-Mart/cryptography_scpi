@@ -20,7 +20,26 @@
         {
             <p>No hay otros usuarios disponibles, actualiza para volver a intentar</p>
         }
+        <button id="myButton" type="button">Haz click aquí</button>
         <input type="submit" name="action" value="Actualizar" class="btn btn-primary" />
         <input type="submit" name="action" value="Salir" class="btn btn-primary" />
     </form>
 </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#myButton").click(function () {
+            $.ajax({
+                url: '/comunicacion?handler=Send',
+                type: 'POST',
+                success: function (response) {
+                    console.log(response);
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        });
+    });
+</script>

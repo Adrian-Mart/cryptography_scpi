@@ -43,16 +43,20 @@ public class ComunicationModel : PageModel
 
     }
 
+    public void OnPostSend()
+    {
+        if (otherAvailable)
+        {
+            Sessions.SessionsList[sessionId].WriteMessage(mensaje);
+        }
+    }
+
+    
+
     public IActionResult OnPost()
     {
         switch (action)
         {
-            case "Enviar":
-                if (otherAvailable)
-                {
-                    Sessions.SessionsList[sessionId].WriteMessage(mensaje);
-                }
-                return Redirect($"/cominicacion?sessionId={sessionId}");
             case "Actualizar":
                 if (otherAvailable)
                 {
