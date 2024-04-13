@@ -68,6 +68,7 @@ public class ComunicationModel : PageModel
             {
                 // Set the user name
                 user = Sessions.SessionsList[sessionId].CurrentSession!.Other?.user ?? "";
+                // Share the symmetric key
                 Sessions.SessionsList[sessionId].ShareSymmetricKey();
 
                 // Try to read the message
@@ -79,7 +80,9 @@ public class ComunicationModel : PageModel
                     // If the message is not empty
                     if (!string.IsNullOrEmpty(u) && u == "True")
                     {
+                        // Share the symmetric key
                         Sessions.SessionsList[sessionId].ShareSymmetricKey();
+                        // Read the message
                         message = Sessions.SessionsList[sessionId].ReadMessage();
                     }
                 }

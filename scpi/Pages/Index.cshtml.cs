@@ -51,6 +51,7 @@ public class IndexModel : PageModel
     /// <summary>
     /// Creates a method called OnPost that receives the form the index page
     /// </summary>
+    /// <returns>Redirects to the saveKeys page or the loadKeys page or the index page</returns>
     public IActionResult OnPost()
     {
         ///<summary>
@@ -58,9 +59,11 @@ public class IndexModel : PageModel
         ///</summary>
         if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
         {
+            // Creates a session manager
             SessionManager manager;
             if (!SessionManager.CreateSession(username, password, out manager))
             {
+                ///Redirects to the index page if the session manager is not created
                 return RedirectToPage("Index");
             }
             ///<summary>
@@ -68,13 +71,16 @@ public class IndexModel : PageModel
             ///</summary>
             if (generatekeys == "on")
             {
+                // And adds the session manager to the sessions list
                 sessionId = Sessions.AddSession(manager);
+                // Redirects to the saveKeys page with the session ID as a query parameter if the generatekeys is on
                 return Redirect($"/SaveKeys?sessionId={sessionId}");
             }
             else
             {
+                // Adds the session manager to the sessions list
                 sessionId = Sessions.AddSession(manager);
-                ///Redirects to the loadKeys page
+                ///Redirects to the loadKeys page with the session ID as a query parameter if the generatekeys is off
                 return Redirect($"/loadKeys?sessionId={sessionId}");
             }
         }
