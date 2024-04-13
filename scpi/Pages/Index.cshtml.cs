@@ -4,21 +4,34 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace scpi.Pages;
 
 /// <summary>
-/// Creates a class called IndexModel that is a PageModel
+/// This class is the model for the index page
 /// </summary>
 public class IndexModel : PageModel
 {
+    /// <summary>
+    /// Database context
+    /// </summary>
     private readonly ApplicationDbContext _context;
+
+    /// <summary>
+    /// Session ID of the current session
+    /// </summary>
     private int sessionId = 0;
 
+    /// <summary>
+    /// Constructor for the index model
+    /// </summary>
+    /// <param name="context">Database context</param>
     public IndexModel(ApplicationDbContext context)
     {
+        // Initialize the database controller
         _context = context;
         DatabaseController.Initialize(_context);
     }
 
     /// <summary>
-    /// Creates a property of type string called username and initializes it with an empty string
+    /// Creates a property of type string called username 
+    /// and initializes it with an empty string
     /// </summary>
     [BindProperty]
     public string username { get; set; } = string.Empty;
