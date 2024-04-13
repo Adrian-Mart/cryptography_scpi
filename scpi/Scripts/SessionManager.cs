@@ -25,8 +25,9 @@ public class SessionManager
 
     public void GenerateKeys()
     {
-        CurrentSession?.GenerateKeys();
-        CurrentSession!.Generated = true;
+        CurrentSession!.GenerateKeys();
+        DatabaseController.UpdateUser(CurrentSession!.User);
+        CurrentSession.Generated = true;
     }
 
     public void ShareSymmetricKey()
@@ -58,6 +59,7 @@ public class SessionManager
     public void LoadKeys(string privKey, string pubKey)
     {
         CurrentSession?.LoadKeys(privKey, pubKey);
+        DatabaseController.UpdateUser(CurrentSession!.User);
     }
 
     public string ReadMessage()

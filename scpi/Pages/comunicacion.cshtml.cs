@@ -24,7 +24,7 @@ public class ComunicationModel : PageModel
 
     public ComunicationModel(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
     {
-        
+
         DatabaseController.Initialize(context);
 
         var id = httpContextAccessor.HttpContext?.Request.Query["sessionId"];
@@ -38,45 +38,43 @@ public class ComunicationModel : PageModel
         }
 
         otherAvailable = Sessions.SessionsList[sessionId].SetOtherUser();
-        user = Sessions.SessionsList[sessionId].CurrentSession!.Other?.user ?? "[Sin usuario]";
-
-        if (user == "[Sin usuario]")
+        if (otherAvailable)
         {
-            // Redirect to the index page
-            RedirectToPage("Index");
-        }
-        else Sessions.SessionsList[sessionId].ShareSymmetricKey();
+            user = Sessions.SessionsList[sessionId].CurrentSession!.Other?.user ?? "";
+            Sessions.SessionsList[sessionId].ShareSymmetricKey();
 
-        try
-        {
-            var u = httpContextAccessor.HttpContext?.Request.Query["u"].First() ?? "";
-            if (!string.IsNullOrEmpty(u) && u == "True")
+            try
             {
-                Sessions.SessionsList[sessionId].ShareSymmetricKey();
-                message = Sessions.SessionsList[sessionId].ReadMessage();
+                var u = httpContextAccessor.HttpContext?.Request.Query["u"].First() ?? "";
+                if (!string.IsNullOrEmpty(u) && u == "True")
+                {
+                    Sessions.SessionsList[sessionId].ShareSymmetricKey();
+                    message = Sessions.SessionsList[sessionId].ReadMessage();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            try
+            {
+                var t = httpContextAccessor.HttpContext?.Request.Query["t"].First() ?? "";
+                var s = httpContextAccessor.HttpContext?.Request.Query["s"].First() ?? "";
+
+                if (!string.IsNullOrEmpty(t) && !string.IsNullOrEmpty(s))
+                {
+                    t = t.Replace(")", "+").Replace("(", "/").Replace("-", "=");
+                    s = s.Replace(")", "+").Replace("(", "/").Replace("-", "=");
+                    MessageManager.WriteMessage(t, s, Sessions.SessionsList[sessionId].CurrentSession!);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
 
-        try
-        {
-            var t = httpContextAccessor.HttpContext?.Request.Query["t"].First() ?? "";
-            var s = httpContextAccessor.HttpContext?.Request.Query["s"].First() ?? "";
-
-            if (!string.IsNullOrEmpty(t) && !string.IsNullOrEmpty(s))
-            {
-                t = t.Replace(")", "+").Replace("(", "/").Replace("-", "=");
-                s = s.Replace(")", "+").Replace("(", "/").Replace("-", "=");
-                MessageManager.WriteMessage(t, s, Sessions.SessionsList[sessionId].CurrentSession!);
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
 
     }
 

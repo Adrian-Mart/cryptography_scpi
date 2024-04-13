@@ -66,6 +66,7 @@ public class Session
     public void GenerateKeys()
     {
         (PublicKey, PrivateKey) = KeyGenerator.GenerateAsymmetricKeys();
+        User.public_key = Convert.ToBase64String(PublicKey);
     }
 
     public void ShareSymmetricKey()

@@ -38,7 +38,10 @@ public class LoadKeysModel : PageModel
         }
     }
 
-
+    public IActionResult OnPostLoadKeys()
+    {
+        return RedirectToPage("LoadKeys");
+    }
 
     /// <summary>
     /// Creates a method called OnPost that receives the form the loadkeys page
@@ -57,9 +60,8 @@ public class LoadKeysModel : PageModel
 
             return Redirect($"/comunicacion?sessionId={sessionId}");
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Console.WriteLine(e.Message);
             return Redirect($"/loadKeys?sessionId={sessionId}");
         }
     }
