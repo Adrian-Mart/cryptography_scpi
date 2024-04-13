@@ -4,18 +4,24 @@
     ViewData["Title"] = "Comunicación";
 }
 
-<form method="post">
-    <div class="text-center">
-        <h1 class="display-4">Comunicación con [Usuario]</h1>
-        <input type="text" name="mensaje" class="form-control" text="Mensaje" />
-        <input type="submit" name="action" value="Enviar" class="btn btn-primary" />
-    </div>
-    <p>Último mensaje recibido</p>
-    <p>Mensaje</p>
-    <div class="text-center">
-    <p>
+
+<div class="text-center">
+    <form method="post">
+        @if (@Model.otherAvailable)
+        {
+            <div class="text-center">
+                <h1 class="display-4">Comunicación con @Model.user</h1>
+                <input type="text" name="mensaje" class="form-control" text="Mensaje" />
+                <input type="submit" name="action" value="Enviar" class="btn btn-primary" />
+            </div>
+            <p>Último mensaje recibido: @Model.message</p>
+        }
+        else
+        {
+            <p>No hay otros usuarios disponibles, actualiza para volver a intentar</p>
+        }
         <input type="submit" name="action" value="Actualizar" class="btn btn-primary" />
         <input type="submit" name="action" value="Salir" class="btn btn-primary" />
-    </p>
-    </div>
-</form>
+    </form>
+</div>
+

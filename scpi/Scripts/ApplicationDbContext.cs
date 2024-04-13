@@ -12,15 +12,15 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<MessageDB>().HasNoKey();
-        modelBuilder.Entity<SharedKeyDB>().HasNoKey();
+        modelBuilder.Entity<MessageDB>().HasKey(s => new { s.sender_id, s.receiver_id });
+        modelBuilder.Entity<SharedKeyDB>().HasKey(s => new { s.sender_id, s.receiver_id });
     }
 
     public DbSet<UserDB> users { get; set; }
 
     public DbSet<MessageDB> messages { get; set; }
 
-    public DbSet<SharedKeyDB> keys { get; set; }
+    public DbSet<SharedKeyDB> shared_keys { get; set; }
 }
 
 public class UserDB
@@ -33,15 +33,15 @@ public class UserDB
 
 public class SharedKeyDB
 {
-    public required int Sender_id { get; set; }
-    public required int Receiver_id { get; set; }
-    public required string Key { get; set; }
+    public required int sender_id { get; set; }
+    public required int receiver_id { get; set; }
+    public required string key { get; set; }
 }
 
 public class MessageDB
 {
-    public required int Sender_id { get; set; }
-    public required int Receiver_id { get; set; }
-    public required string Text { get; set; }
-    public required string Signature { get; set; }
+    public required int sender_id { get; set; }
+    public required int receiver_id { get; set; }
+    public required string text { get; set; }
+    public required string signature { get; set; }
 }

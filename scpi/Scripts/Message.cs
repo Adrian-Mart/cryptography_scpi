@@ -5,20 +5,13 @@ using scpi.Pages;
 
 namespace scpi;
 
-public class MessageManager
+public static class MessageManager
 {
-    public string BasePath { get; set; }
-
-    public MessageManager(string path)
-    {
-        BasePath = path;
-    }
-
-    public bool TryReadMessage(Session session, string user, out string message)
+    public static bool TryReadMessage(Session session, out string message)
     {
         try
         {
-            message = ReadMessage(session, user);
+            message = ReadMessage(session);
             return true;
         }
         catch (Exception)
@@ -28,27 +21,52 @@ public class MessageManager
         }
     }
 
-    public string ReadMessage(Session session, string senderUsername)
+    public static string ReadMessage(Session session)
     {
         // Read the message object from the xml file
-        Message message = Read(senderUsername, session.User);
+        Message message = Read(session.Other!, session.User);
 
         // Get public key of the user
-        var publicKey = Session.LoadUserPublicKey(senderUsername, BasePath);
+        var publicKey = Session.LoadUserPublicKey(session.Other!);
 
         // Validate the message
         if (!Validate(message, publicKey))
             throw new InvalidOperationException("Invalid message: signature does not match");
 
         // Get the symmetric key
-        var key = session.ReceiveSymmetricKey(BasePath, senderUsername);
+        var key = session.ReceiveSymmetricKey();
 
         // Decrypt the message
         (string text, byte[] iv, _) = AesCipher.DecomposeMessage(message.Text);
         return AesCipher.Decrypt(text, key, iv);
     }
 
-    public void WriteMessage(string text, Session session, string receiver)
+    public static string ReadCipher(Session session)
+    {
+        // Read the message object from the xml file
+        Message message = Read(session.Other!, session.User);
+
+        // Get public key of the user
+        var publicKey = Session.LoadUserPublicKey(session.Other!);
+
+        // Validate the message
+        if (!Validate(message, publicKey))
+            throw new InvalidOperationException("Invalid message: signature does not match");
+
+        return message.Text;
+    }
+
+    public static string Decipher(string cipher, Session session)
+    {
+        // Get the symmetric key
+        var key = session.ReceiveSymmetricKey();
+
+        // Decrypt the message
+        (string text, byte[] iv, _) = AesCipher.DecomposeMessage(cipher);
+        return AesCipher.Decrypt(text, key, iv);
+    }
+
+    public static void WriteMessage(string text, Session session)
     {
         // Encrypt the message
         string cipherText = AesCipher.Encrypt(text, session.SymmetricKey, out byte[] iv);
@@ -59,37 +77,54 @@ public class MessageManager
 
         // Save the message object to an xml file
         Write(new Message { Text = composedMessage, Signature = signature },
-            session.User, receiver);
+            session.User, session.Other!);
     }
 
-    private Message Read(string senderUsername, string receiverUsername)
+    public static void WriteMessage(string t, string s, Session session)
     {
-        UserDB receiver = DatabaseController.GetUser(receiverUsername) ??
-            throw new InvalidOperationException("Receiver not found");
-        UserDB sender = DatabaseController.GetUser(senderUsername) ??
-            throw new InvalidOperationException("Sender not found");
+        Write(new Message { Text = t, Signature = s },
+            session.User, session.Other!);
+    }
 
+    public static Message GetCipher(string text, Session session)
+    {
+        // Encrypt the message
+        string cipherText = AesCipher.Encrypt(text, session.SymmetricKey, out byte[] iv);
+        string composedMessage = AesCipher.ComposeMessage(cipherText, iv, new byte[8]);
+
+        // Sign the message
+        string signature = DigitalSignature.Sign(cipherText, session.GetPrivateKey());
+
+        // Save the message object to an xml file
+        return new Message { Text = composedMessage, Signature = signature };
+    }
+
+    private static Message Read(UserDB sender, UserDB receiver)
+    {
         var message = DatabaseController.GetMessage(sender, receiver);
 
         if (message is null)
             throw new InvalidOperationException("Message not found");
 
-        Message m = new Message { Text = message.Text, Signature = message.Signature };
+        Message m = new Message { Text = message.text, Signature = message.signature };
 
         return m;
     }
 
-    private void Write(Message message, string senderUsername, string receiverUsername)
+    private static void Write(Message message, UserDB sender, UserDB receiver)
     {
-        UserDB receiver = DatabaseController.GetUser(receiverUsername) ??
-            throw new InvalidOperationException("Receiver not found");
-        UserDB sender = DatabaseController.GetUser(senderUsername) ??
-            throw new InvalidOperationException("Sender not found");
-
-        DatabaseController.AddMessage(sender, receiver, message.Text, message.Signature);
+        // Check if message between sender an receiver exists
+        var m = DatabaseController.GetMessage(sender, receiver);
+        if (m is not null)
+        {
+            m.text = message.Text;
+            m.signature = message.Signature;
+            DatabaseController.UpdateMessage(m);
+        }
+        else DatabaseController.AddMessage(sender, receiver, message.Text, message.Signature);
     }
 
-    private bool Validate(Message message, byte[] publicKey)
+    private static bool Validate(Message message, byte[] publicKey)
     {
         (string text, _, _) = AesCipher.DecomposeMessage(message.Text);
         // Validate the message
