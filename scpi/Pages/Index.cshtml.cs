@@ -8,6 +8,15 @@ namespace scpi.Pages;
 /// </summary>
 public class IndexModel : PageModel
 {
+    private readonly ApplicationDbContext _context;
+    private int sessionId = 0;
+
+    public IndexModel(ApplicationDbContext context)
+    {
+        _context = context;
+        DatabaseController.Initialize(_context);
+    }
+
     /// <summary>
     /// Creates a property of type string called username and initializes it with an empty string
     /// </summary>
@@ -36,22 +45,28 @@ public class IndexModel : PageModel
         ///</summary>
         if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
         {
+            SessionManager manager;
+            if (!SessionManager.CreateSession(username, password, out manager))
+            {
+                return RedirectToPage("Index");
+            }
             ///<summary>
             ///Checks if the generatekeys is on or off, if it is on it redirects to the saveKeys page, if it is off it redirects to the loadKeys page
             ///</summary>
             if (generatekeys == "on")
             {
-                ///<summary>
-                ///Redirects to the saveKeys page
-                ///</summary>
-                return RedirectToPage("saveKeys");
+                sessionId = Sessions.AddSession(manager);
+                return Redirect($"/SaveKeys?sessionId={sessionId}");
             }
             else
             {
+                sessionId = Sessions.AddSession(manager);
                 ///Redirects to the loadKeys page
-                return RedirectToPage("loadKeys");
-            }   
-        }else{
+                return Redirect($"/loadKeys?sessionId={sessionId}");
+            }
+        }
+        else
+        {
             ///Redirects to the index page
             return RedirectToPage("Index");
         }

@@ -1,0 +1,20 @@
+version: '1.0'
+
+services:
+
+
+  dB:
+    image: postgres:16.2
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: mypass123
+    volumes:
+      - /psql-data:/var/lib/postgresql/data:Z
+    ports:
+      - 5432:5432
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080

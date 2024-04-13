@@ -5,20 +5,13 @@ using scpi.Pages;
 
 namespace scpi;
 
-public class MessageManager
+public static class MessageManager
 {
-    public string BasePath { get; set; }
-
-    public MessageManager(string path)
-    {
-        BasePath = path;
-    }
-
-    public bool TryReadMessage(Session session, string user, out string message)
+    public static bool TryReadMessage(Session session, out string message)
     {
         try
         {
-            message = ReadMessage(session, user);
+            message = ReadMessage(session);
             return true;
         }
         catch (Exception)
@@ -28,32 +21,53 @@ public class MessageManager
         }
     }
 
-    public string ReadMessage(Session session, string user)
+    public static string ReadMessage(Session session)
     {
-        var fullPath = Path.Combine(BasePath, $"{user}_message.xml");
-
         // Read the message object from the xml file
-        Message message = Read(fullPath);
+        Message message = Read(session.Other!, session.User);
 
         // Get public key of the user
-        var publicKey = Session.LoadUserPublicKey(user, BasePath);
+        var publicKey = Session.LoadUserPublicKey(session.Other!);
 
         // Validate the message
         if (!Validate(message, publicKey))
             throw new InvalidOperationException("Invalid message: signature does not match");
 
         // Get the symmetric key
-        var key = session.ReceiveSymmetricKey(BasePath, user);
+        var key = session.ReceiveSymmetricKey();
 
         // Decrypt the message
         (string text, byte[] iv, _) = AesCipher.DecomposeMessage(message.Text);
         return AesCipher.Decrypt(text, key, iv);
     }
 
-    public void WriteMessage(string text, Session session)
+    public static string ReadCipher(Session session)
     {
-        var fullPath = Path.Combine(BasePath, $"{session.User}_message.xml");
+        // Read the message object from the xml file
+        Message message = Read(session.Other!, session.User);
 
+        // Get public key of the user
+        var publicKey = Session.LoadUserPublicKey(session.Other!);
+
+        // Validate the message
+        if (!Validate(message, publicKey))
+            throw new InvalidOperationException("Invalid message: signature does not match");
+
+        return message.Text;
+    }
+
+    public static string Decipher(string cipher, Session session)
+    {
+        // Get the symmetric key
+        var key = session.ReceiveSymmetricKey();
+
+        // Decrypt the message
+        (string text, byte[] iv, _) = AesCipher.DecomposeMessage(cipher);
+        return AesCipher.Decrypt(text, key, iv);
+    }
+
+    public static void WriteMessage(string text, Session session)
+    {
         // Encrypt the message
         string cipherText = AesCipher.Encrypt(text, session.SymmetricKey, out byte[] iv);
         string composedMessage = AesCipher.ComposeMessage(cipherText, iv, new byte[8]);
@@ -62,27 +76,55 @@ public class MessageManager
         string signature = DigitalSignature.Sign(cipherText, session.GetPrivateKey());
 
         // Save the message object to an xml file
-        Write(new Message { Text = composedMessage, Signature = signature }, fullPath);
+        Write(new Message { Text = composedMessage, Signature = signature },
+            session.User, session.Other!);
     }
 
-    private Message Read(string path)
+    public static void WriteMessage(string t, string s, Session session)
     {
-        // Read the message object from the xml file
-        XmlSerializer serializer = new XmlSerializer(typeof(Message));
-        using var reader = new StreamReader(path);
-        return serializer.Deserialize(reader) as Message ??
-            throw new InvalidOperationException("Invalid message");
+        Write(new Message { Text = t, Signature = s },
+            session.User, session.Other!);
     }
 
-    private void Write(Message message, string path)
+    public static Message GetCipher(string text, Session session)
     {
-        XmlSerializer serializer = new XmlSerializer(typeof(Message));
+        // Encrypt the message
+        string cipherText = AesCipher.Encrypt(text, session.SymmetricKey, out byte[] iv);
+        string composedMessage = AesCipher.ComposeMessage(cipherText, iv, new byte[8]);
 
-        using var writer = new StreamWriter(path);
-        serializer.Serialize(writer, message);
+        // Sign the message
+        string signature = DigitalSignature.Sign(cipherText, session.GetPrivateKey());
+
+        // Save the message object to an xml file
+        return new Message { Text = composedMessage, Signature = signature };
     }
 
-    private bool Validate(Message message, byte[] publicKey)
+    private static Message Read(UserDB sender, UserDB receiver)
+    {
+        var message = DatabaseController.GetMessage(sender, receiver);
+
+        if (message is null)
+            throw new InvalidOperationException("Message not found");
+
+        Message m = new Message { Text = message.text, Signature = message.signature };
+
+        return m;
+    }
+
+    private static void Write(Message message, UserDB sender, UserDB receiver)
+    {
+        // Check if message between sender an receiver exists
+        var m = DatabaseController.GetMessage(sender, receiver);
+        if (m is not null)
+        {
+            m.text = message.Text;
+            m.signature = message.Signature;
+            DatabaseController.UpdateMessage(m);
+        }
+        else DatabaseController.AddMessage(sender, receiver, message.Text, message.Signature);
+    }
+
+    private static bool Validate(Message message, byte[] publicKey)
     {
         (string text, _, _) = AesCipher.DecomposeMessage(message.Text);
         // Validate the message
