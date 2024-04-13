@@ -127,11 +127,10 @@ public class Session
         return (KeyToXML(publicKey), KeyToXML(privateKey));
     }
 
-    public void LoadKeys(string privkey)
+    public void LoadKeys(string privkey, string pubKey)
     {
         // Load the public key
-        string pub = User.public_key ??
-            throw new InvalidOperationException("Public key not found");
+        string pub = KeyFromXML(pubKey);
         // Load the private key
         string priv = KeyFromXML(privkey);
 

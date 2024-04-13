@@ -55,9 +55,9 @@ public class SessionManager
             throw new InvalidOperationException("No session found");
     }
 
-    public void LoadKeys(string privKey)
+    public void LoadKeys(string privKey, string pubKey)
     {
-        CurrentSession?.LoadKeys(privKey);
+        CurrentSession?.LoadKeys(privKey, pubKey);
     }
 
     public string ReadMessage()
